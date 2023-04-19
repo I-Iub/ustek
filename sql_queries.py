@@ -27,6 +27,8 @@ def main():
     print(*get_task_1_results(), sep='\n')
     print()
     print(*get_task_2_results(), sep='\n')
+    print()
+    print(*get_task_3_results(), sep='\n')
 
 
 def create_tables():
@@ -114,31 +116,54 @@ def insert_values():
         )
 
 
+task_1_query = """
+select id, price, max_price, round((price / max_price) :: numeric, 2) as share
+from (select id, name, price, max(price) over () as max_price
+      from products) as t
+order by price desc, id
+"""
+
+
 def get_task_1_results():
     with connection.cursor() as cursor:
-        cursor.execute("""
-            select id, price, max_price,
-            round((price / max_price) :: numeric, 2) as share
-            from (
-                select id, name, price, max(price) over () as max_price
-                from products
-            ) as t
-            order by price desc, id;
-        """)
+        cursor.execute(task_1_query)
         return cursor.fetchall()
+
+
+task_2_query = """
+select user_id, order_id,
+  rank() over (partition by user_id order by time, order_id) as order_number
+from (select user_id, order_id, action, time,
+      rank() over(partition by user_id, order_id order by time desc)
+      from user_actions) as t1
+where rank = 1 and action = 'create_order'
+order by user_id, order_number
+"""
 
 
 def get_task_2_results():
     with connection.cursor() as cursor:
-        cursor.execute("""
-            select user_id, order_id, rank() over (
-                partition by user_id order by time, order_id) as order_number
-            from (select user_id, order_id, action, time,
-                  rank() over(partition by user_id, order_id order by time desc)
-                  from user_actions) as t
-            where rank = 1 and action = 'create_order'
-            order by user_id, order_number
-        """)
+        cursor.execute(task_2_query)
+        return cursor.fetchall()
+
+
+task_3_query = """
+select user_id, order_id, order_number, (time - prev_time) as since_prev_order
+from (
+  select user_id, order_id, time, lag(time, 1) over() as prev_time,
+    rank() over (partition by user_id order by time, order_id) as order_number
+  from (select user_id, order_id, action, time,
+        rank() over(partition by user_id, order_id order by time desc)
+        from user_actions) as t1
+  where rank = 1 and action = 'create_order'
+  order by user_id, order_number
+) as t2
+"""
+
+
+def get_task_3_results():
+    with connection.cursor() as cursor:
+        cursor.execute(task_3_query)
         return cursor.fetchall()
 
 
