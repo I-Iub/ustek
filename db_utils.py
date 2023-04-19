@@ -2,36 +2,38 @@ import datetime
 
 import psycopg2
 from psycopg2.errors import DuplicateDatabase
+from psycopg2.extensions import connection as psycopg_conn
 from psycopg2.extras import execute_values
 
 
-connection = psycopg2.connect(dbname='postgres', host='localhost', port=35432,
-                              user='postgres', password='ustek')
-connection.autocommit = True
-with connection.cursor() as cursor:
-    try:
-        cursor.execute('create database ustek')
-    except DuplicateDatabase:
-        pass
-connection.close()
-
-connection = psycopg2.connect(dbname='ustek', host='localhost', port=35432,
-                              user='postgres', password='ustek')
-connection.autocommit = True
+def populate_database() -> None:
+    _create_database()
+    connection = get_connection()
+    _create_tables(connection)
+    _insert_values(connection)
 
 
-def main():
-    create_tables()
-    insert_values()
+def _create_database() -> None:
+    connection = psycopg2.connect(dbname='postgres', host='localhost',
+                                  port=35432, user='postgres',
+                                  password='ustek')
+    connection.autocommit = True
+    with connection.cursor() as cursor:
+        try:
+            cursor.execute('create database ustek')
+        except DuplicateDatabase:
+            pass
+    connection.close()
 
-    print(*get_task_1_results(), sep='\n')
-    print()
-    print(*get_task_2_results(), sep='\n')
-    print()
-    print(*get_task_3_results(), sep='\n')
+
+def get_connection() -> psycopg_conn:
+    connection = psycopg2.connect(dbname='ustek', host='localhost', port=35432,
+                                  user='postgres', password='ustek')
+    connection.autocommit = True
+    return connection
 
 
-def create_tables():
+def _create_tables(connection: psycopg_conn) -> None:
     with connection.cursor() as cursor:
         # UNIQUE (user_id, order_id, action) -- любой пользователь не может
         # создать заказ с тем же самым номером, как у другого пользователя;
@@ -63,7 +65,7 @@ def create_tables():
 actions_values = [
     # user_id = 1
     # заказ создан, затем отменён
-    (10, 1, 100, 'create_order', datetime.datetime(2023, 4, 19, 12, 10)),
+    # (10, 1, 100, 'create_order', datetime.datetime(2023, 4, 19, 12, 10)),
     (11, 1, 100, 'cancel_order', datetime.datetime(2023, 4, 19, 12, 20)),
     # заказ только отменён
     (12, 1, 101, 'cancel_order', datetime.datetime(2023, 4, 19, 12, 1)),
@@ -101,7 +103,7 @@ product_values = [
 ]
 
 
-def insert_values():
+def _insert_values(connection: psycopg_conn) -> None:
     with connection.cursor() as cursor:
         execute_values(
             cursor,
@@ -114,58 +116,3 @@ def insert_values():
             'insert into products (id, name, price) values %s',
             product_values
         )
-
-
-task_1_query = """
-select id, price, max_price, round((price / max_price) :: numeric, 2) as share
-from (select id, name, price, max(price) over () as max_price
-      from products) as t
-order by price desc, id
-"""
-
-
-def get_task_1_results():
-    with connection.cursor() as cursor:
-        cursor.execute(task_1_query)
-        return cursor.fetchall()
-
-
-task_2_query = """
-select user_id, order_id,
-  rank() over (partition by user_id order by time, order_id) as order_number
-from (select user_id, order_id, action, time,
-      rank() over(partition by user_id, order_id order by time desc)
-      from user_actions) as t1
-where rank = 1 and action = 'create_order'
-order by user_id, order_number
-"""
-
-
-def get_task_2_results():
-    with connection.cursor() as cursor:
-        cursor.execute(task_2_query)
-        return cursor.fetchall()
-
-
-task_3_query = """
-select user_id, order_id, order_number, (time - prev_time) as since_prev_order
-from (
-  select user_id, order_id, time, lag(time, 1) over() as prev_time,
-    rank() over (partition by user_id order by time, order_id) as order_number
-  from (select user_id, order_id, action, time,
-        rank() over(partition by user_id, order_id order by time desc)
-        from user_actions) as t1
-  where rank = 1 and action = 'create_order'
-  order by user_id, order_number
-) as t2
-"""
-
-
-def get_task_3_results():
-    with connection.cursor() as cursor:
-        cursor.execute(task_3_query)
-        return cursor.fetchall()
-
-
-if __name__ == '__main__':
-    main()
