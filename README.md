@@ -42,7 +42,18 @@ psql -U postgres -h localhost -p 35432 -d ustek -W
 
 ---
 ### Задание по Pandas (Python)
-Запустить скрипт который выведет результаты в консоль:
+
+Если ещё не выполнены нижеследующие команды (как в разделе "Задание по SQL" выше), 
+то выполнить их:
+```
+git clone https://github.com/I-Iub/ustek.git
+cd ustek
+python -m venv venv  # срипты написаны под версию python 3.10
+. venv/bin/activate  # если Linux
+pip install --upgrade pip
+pip install -r requirements.txt
+```
+Запустить скрипт:
 ```
 python purchases.py
 ```
