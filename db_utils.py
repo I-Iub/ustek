@@ -55,7 +55,7 @@ def _create_tables(connection: psycopg_conn) -> None:
         """)
         cursor.execute("""
             create table if not exists products (
-                id integer primary key,
+                product_id integer primary key,
                 name varchar(50) not null,
                 price float4 not null
             )
@@ -99,7 +99,7 @@ product_values = [
     (2, 'молоко', 70),
     (3, 'мясо', 500),
     (4, 'творог', 100),
-    (5, 'макароны', 49),
+    (5, 'макароны', 54),
 ]
 
 
@@ -107,12 +107,12 @@ def _insert_values(connection: psycopg_conn) -> None:
     with connection.cursor() as cursor:
         execute_values(
             cursor,
-            'insert into user_actions (id, user_id, order_id, action, time) '
-            'values %s',
+            'insert into user_actions (id, user_id, order_id, action,'
+            'time) values %s',
             actions_values
         )
         execute_values(
             cursor,
-            'insert into products (id, name, price) values %s',
+            'insert into products (product_id, name, price) values %s',
             product_values
         )
