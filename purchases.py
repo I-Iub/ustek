@@ -30,33 +30,39 @@ def get_total_df(target_dir: Path) -> pd.DataFrame:
 def main():
     total_dataframe = get_total_df(target_dir)
     print('Задание 1')
-    print('Общий датафрейм:')
-    print(total_dataframe)
-
+    print('Общий датафрейм:\n', total_dataframe)
     # total_dataframe.to_csv('total_dataframe.csv')
 
     print('\nЗадание 2')
     print('Сумма по колонке quantity:', total_dataframe['quantity'].sum())
 
-    top_users = (total_dataframe.groupby(['name'])['quantity'].sum()
-                 .sort_values(ascending=False))
-    if top_users.empty:
+    purchases = total_dataframe.groupby(['name'])['quantity'].sum()
+    if purchases.empty:
         names_string = 'Датафрейм пуст'
     else:
-        max_sum = top_users.values[0]
-        top_names = [
-            name for name, value in top_users.items() if value == max_sum
-        ]
+        purchases_max_number = purchases.max()
+        top_names = [name for name, purchases_number in purchases.items()
+                     if purchases_number == purchases_max_number]
         top_names.sort()
         names_string = ', '.join(top_names)
     print('\nЗадание 3')
     print('Больше всех товаров купил пользователь(и):', names_string)
 
-    top_10 = (total_dataframe.groupby(['product_id'])['quantity'].sum()
-              .sort_values(ascending=False).head(10))
+    sorted_purchases_num = (
+        total_dataframe.groupby(['product_id'])['quantity'].sum()
+        .sort_values(ascending=False)
+    )
+    top_10 = sorted_purchases_num.head(10)
     print('\nЗадание 4')
     print('Топ-10 товаров по числу проданных единиц за всё время:',
-          list(top_10.keys()))
+          *list(top_10.keys()))
+    purchases_num_df = pd.DataFrame(sorted_purchases_num.items(),
+                                    columns=['product_id', 'purchases_number'])
+    top_10_sorted = purchases_num_df.sort_values(
+        ['purchases_number', 'product_id'], ascending=[False, True]
+    ).head(10)
+    print('Топ-10 с дополнительной сортировкой по возрастанию ключей:\n',
+          top_10_sorted)
 
 
 if __name__ == '__main__':
