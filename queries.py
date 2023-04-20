@@ -19,16 +19,14 @@ where rank = 1 and action = 'create_order'
 order by user_id, order_number
 """
 task_3_query = """
-select user_id, order_id, order_number, (time - prev_time) as since_prev_order
-from (
-  select user_id, order_id, time,
-    lag(time, 1) over(partition by user_id) as prev_time,
-    rank() over(partition by user_id order by time, order_id) as order_number
-  from (select user_id, order_id, action, time,
-        rank() over(partition by user_id, order_id order by time desc)
-        from user_actions) as t1
-  where rank = 1 and action = 'create_order'
-) as t2
+select user_id, order_id,
+  rank() over(partition by user_id order by time, order_id) as order_number,
+  (time - lag(time, 1) over(partition by user_id order by time, order_id))
+  as since_prev_order
+from (select user_id, order_id, action, time,
+      rank() over(partition by user_id, order_id order by time desc)
+      from user_actions) as t1
+where rank = 1 and action = 'create_order'
 order by user_id, order_number
 """
 
