@@ -28,8 +28,8 @@ from (
         rank() over(partition by user_id, order_id order by time desc)
         from user_actions) as t1
   where rank = 1 and action = 'create_order'
-  order by user_id, order_number
 ) as t2
+order by user_id, order_number
 """
 
 
