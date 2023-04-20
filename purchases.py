@@ -52,11 +52,22 @@ def main():
     print('\nЗадание 3')
     print('Больше всех товаров купил пользователь(и):', names_string)
 
-    top_10 = (total_dataframe.groupby(['product_id'])['quantity'].sum()
-              .sort_values(ascending=False).head(10))
+    sorted_product_sums = (
+        total_dataframe.groupby(['product_id'])['quantity'].sum()
+        .sort_values(ascending=False)
+    )
+    top_10 = sorted_product_sums.head(10)
     print('\nЗадание 4')
     print('Топ-10 товаров по числу проданных единиц за всё время:',
           list(top_10.keys()))
+
+    s = pd.DataFrame(sorted_product_sums.items(),
+                     columns=['product_id', 'sales_number'])
+    top_10_sorted = s.sort_values(
+        ['sales_number', 'product_id'], ascending=[False, True]
+    ).head(10)
+    print('С дополнительной сортировкой по возрастанию ключей:\n',
+          top_10_sorted)
 
 
 if __name__ == '__main__':
